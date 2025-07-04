@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>石大编程助手</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="chat-container"></div>
+        <div id="messages"></div>
+        <div id="input-area">
+            <textarea 
+                id="input"
+                rows="2"
+                placeholder="请输入您的问题，例如：如何快速学习机器学习？"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendToOllama();}"
+            ></textarea>
+            <button onclick="sendToOllama()" id="send-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+                发送
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const input = document.getElementById('input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function appendMessage(content, sender, isLoading = false) {
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${sender}` + (isLoading ? ' loading' : '');
+            bubble.innerHTML = `
+                <div class="avatar">${sender === 'user' ? '🧑' : '🤖'}</div>
+                <div class="bubble-content">${content}</div>
+            `;
+            messagesDiv.appendChild(bubble);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return bubble;
+        }
+
+        // 异步逐字输出
+        async function typeWriter(element, text, delay = 18) {
+            element.innerHTML = '';
+            for (let i = 0; i < text.length; i++) {
+                element.innerHTML += text[i];
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                await new Promise(res => setTimeout(res, delay));
+            }
+        }
+
+        async function sendToOllama() {
+            const question = input.value.trim();
+            if (!question) return;
+
+            input.value = '';
+            input.disabled = true;
+            sendBtn.disabled = true;
+
+            // 用户消息
+            appendMessage(question, 'user');
+
+            // AI loading消息
+            const loadingBubble = appendMessage(
+                `<span class="loading-dot"><span>.</span><span>.</span><span>.</span></span>`, 
+                'ai', 
+                true
+            );
+
+            try {
+                const options = {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer sk-xgrvmcsnotbrrypgtwtncaazflsfeeqaiuqkwwztabyhimnn',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-ai/DeepSeek-R1",
+                        messages: [{ role: "user", content: question }],
+                        stream: false,
+                        max_tokens: 512,
+                        temperature: 0.7,
+                        top_p: 0.7,
+                        top_k: 50,
+                        frequency_penalty: 0.5,
+                    })
+                };
+
+                const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions', options);
+                if (!resp.ok) throw new Error(`HTTP错误 ${resp.status}`);
+
+                const data = await resp.json();
+                loadingBubble.classList.remove('loading');
+                const bubbleContent = loadingBubble.querySelector('.bubble-content');
+                // 逐字输出
+                await typeWriter(bubbleContent, data.choices[0].message.content);
+
+            } catch (error) {
+                loadingBubble.classList.remove('loading');
+                const bubbleContent = loadingBubble.querySelector('.bubble-content');
+                bubbleContent.innerHTML = `<span style="color:#e74c3c;">❌ 请求失败: ${error.message}</span>`;
+            } finally {
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+    </script>
+</body>
+</html>
