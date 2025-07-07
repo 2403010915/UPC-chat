@@ -5,29 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>石大编程助手</title>
     <link rel="stylesheet" href="style.css">
-    
 </head>
 <body>
+    <!-- 新增历史记录按钮 -->
+    <button class="menu-btn" id="menu-btn" style="top: 20px; left: 20px;">
+        <img src="./logo/lishijilu.svg" alt="历史记录" width="24" height="24">
+    </button>
+    
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-title">历史对话</div>
             <button class="close-sidebar" id="close-sidebar">&times;</button>
+        </div>
+        <div class="sidebar-actions" style="padding:0.5rem 1rem;border-bottom:1px solid #eee;">
+            <button id="clear-all-history" style="background:#3498db;color:white;border:none;padding:0.3rem 0.8rem;border-radius:4px;font-size:0.8rem;cursor:pointer;">清空所有</button>
         </div>
         <div class="history-list" id="history-list">
             <!-- 历史对话将通过JavaScript动态添加 -->
         </div>
         <div class="sidebar-footer">
             <button class="new-chat-btn" id="new-chat-btn">开始新对话</button>
-            <!-- <button class="settings-btn" id="settings-btn">设置</button> -->
         </div>
     </div>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <button class="box-fix" onclick="click_event()">在线IDE</button>
-    <script>
-        function click_event() {
-            window.open('https://tools.qzxdp.cn/runcode', '_blank');
-        }
-    </script>
+    
     <div id="main-content" class="main-content">
         <div class="center-box">
             <main>
@@ -39,9 +41,8 @@
                     id="input"
                     rows="2"
                     placeholder="请输入您的问题，例如：如何快速学习机器学习？"
-                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendToOllamaStream();}"
                     ></textarea>
-                    <button onclick="sendToOllamaStream()" id="send-btn">
+                    <button id="send-btn">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                     </svg>
@@ -50,113 +51,9 @@
                 </div>
             </main>
         </div>
-        <script>
-        // SSE流式输出
-        async function sendToOllamaStream() {
-            const question = input.value.trim();
-            if (!question) return;
-
-            input.value = '';
-            input.disabled = true;
-            sendBtn.disabled = true;
-
-            appendMessage(question, 'user');
-
-            // AI loading消息
-            const loadingBubble = appendMessage(
-            `<span class="loading-dot"><span>.</span><span>.</span><span>.</span></span>`, 
-            'ai', 
-            true
-            );
-            const bubbleContent = loadingBubble.querySelector('.bubble-content');
-            loadingBubble.classList.remove('loading');
-            bubbleContent.innerHTML = '';
-
-            try {
-            const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                'Authorization': 'Bearer sk-xgrvmcsnotbrrypgtwtncaazflsfeeqaiuqkwwztabyhimnn',
-                'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                model: "deepseek-ai/DeepSeek-R1",
-                messages: [{ role: "user", content: question }],
-                stream: true,
-                max_tokens: 512,
-                temperature: 0.7,
-                top_p: 0.7,
-                top_k: 50,
-                frequency_penalty: 0.5,
-                })
-            });
-
-            if (!resp.ok) throw new Error(`HTTP错误 ${resp.status}`);
-
-            const reader = resp.body.getReader();
-            const decoder = new TextDecoder('utf-8');
-            let buffer = '';
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                let lines = buffer.split('\n');
-                buffer = lines.pop(); // 保留未完成的行
-                for (let line of lines) {
-                line = line.trim();
-                if (!line || !line.startsWith('data:')) continue;
-                const dataStr = line.replace(/^data:\s*/, '');
-                if (dataStr === '[DONE]') break;
-                try {
-                    const data = JSON.parse(dataStr);
-                    const delta = data.choices?.[0]?.delta?.content || '';
-                    if (delta) {
-                    bubbleContent.innerHTML += delta;
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                    }
-                } catch (e) {}
-                }
-            }
-            } catch (error) {
-            bubbleContent.innerHTML = `<span style="color:#e74c3c;">❌ 请求失败: ${error.message}</span>`;
-            } finally {
-            input.disabled = false;
-            sendBtn.disabled = false;
-            input.focus();
-            }
-        }
-        </script>
     </div>
-    <script>
-        const messagesDiv = document.getElementById('messages');
-        const input = document.getElementById('input');
-        const sendBtn = document.getElementById('send-btn');
-
-        function appendMessage(content, sender, isLoading = false) {
-            const bubble = document.createElement('div');
-            bubble.className = `bubble ${sender}` + (isLoading ? ' loading' : '');
-            // 加载动画
-            let displayContent = content;
-            if (isLoading && sender === 'ai') {
-                displayContent = `<span class="loading-dot"><span>.</span><span>.</span><span>.</span></span>`;
-            }
-            bubble.innerHTML = `
-                <div class="bubble-content">${displayContent}</div>
-            `;
-            messagesDiv.appendChild(bubble);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            return bubble;
-        }
-
-        // 异步逐字输出
-        async function typeWriter(element, text, delay = 18) {
-            element.innerHTML = '';
-            for (let i = 0; i < text.length; i++) {
-                element.innerHTML += text[i];
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                await new Promise(res => setTimeout(res, delay));
-            }
-        }
-    </script>
+    
+    <!-- 引入脚本文件 -->
+    <script src="static/scripts.js"></script>
 </body>
 </html>
