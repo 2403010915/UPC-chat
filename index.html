@@ -3,22 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>石大编程助手</title>
+    <title>UPC-Chat</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- 新增历史记录按钮 -->
-    <button class="menu-btn" id="menu-btn" style="top: 20px; left: 20px;">
-        <img src="./logo/lishijilu.svg" alt="历史记录" width="24" height="24">
-    </button>
-    
+    <!-- 侧边栏 -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-title">历史对话</div>
             <button class="close-sidebar" id="close-sidebar">&times;</button>
-        </div>
-        <div class="sidebar-actions" style="padding:0.5rem 1rem;border-bottom:1px solid #eee;">
-            <button id="clear-all-history" style="background:#3498db;color:white;border:none;padding:0.3rem 0.8rem;border-radius:4px;font-size:0.8rem;cursor:pointer;">清空所有</button>
         </div>
         <div class="history-list" id="history-list">
             <!-- 历史对话将通过JavaScript动态添加 -->
@@ -27,33 +20,537 @@
             <button class="new-chat-btn" id="new-chat-btn">开始新对话</button>
         </div>
     </div>
+
+    <!-- 侧边栏遮罩 -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
-    <button class="box-fix" onclick="click_event()">在线IDE</button>
-    
-    <div id="main-content" class="main-content">
-        <div class="center-box">
-            <main>
-                <div id="chat-container">
-                    <div id="messages"></div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content" id="main-content">
+        <button class="menu-btn" id="menu-btn" style="top: 15px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+        <button class="menu-btn" id="clear-history-btn" style="top: 60px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+        </button>
+
+        <main>
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="status"></div>
+                    <span>UPC-Chat</span>
+                    <!-- 新增模型选择下拉框 -->
+                    <select class="model-select" id="model-select" style="float: right; margin-left: 10px; padding: 0 10px; border-radius: 18px; border: 1px solid #ddd; font-size: 13px;">
+                        <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3（默认）</option>
+                        <option value="Tongyi-Zhiwen/QwenLong-L1-32B">QwenLong-L1</option>
+                        <option value="Qwen/Qwen3-30B-A3B">Qwen3-30B</option>
+                    </select>
                 </div>
-                <div id="input-area">
-                    <textarea 
-                    id="input"
-                    rows="2"
-                    placeholder="请输入您的问题，例如：如何快速学习机器学习？"
-                    ></textarea>
-                    <button id="send-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                    </svg>
-                    发送
+
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message-container bot">
+                        <!-- <div class="avatar bot-avatar">AI</div>
+                        <div class="message bot-message">
+                            你好！我是UPC-Chat。
+                            <div class="message-time">刚刚</div>
+                        </div> -->
+                    </div>
+                </div>
+                <!-- 新增功能按钮区 -->
+                
+
+                <div class="typing-indicator" id="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                <div class="chat-extra-actions" style="display: flex; gap: 12px; margin: 16px 0 8px 0; justify-content: center;">
+                    <button class="senbutton" id="btn-train" title="个性化代码训练">
+                        个性化代码训练
+                    </button>
+                    <button class="senbutton" id="btn-ide" title="在线IDE">
+                        在线IDE
+                    </button>
+                    <button class="senbutton" id="btn-docs" title="开发文档">
+                         敬请期待
                     </button>
                 </div>
-            </main>
-        </div>
+                <div class="input-area">
+                    <textarea class="message-input" id="message-input" placeholder="向 AI 发送消息~" rows="1"></textarea>
+                    <!-- 新增深度思考按钮 -->
+                    <button class="deep-think-btn" id="deep-think-btn" title="开启/关闭深度思考模式">
+                        深度思考
+                    </button>
+                    <button class="sendbutton-" id="send-button">
+                        <svg class="send-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
     </div>
-    
-    <!-- 引入脚本文件 -->
-    <script src="static/scripts.js"></script>
+    <script>
+        // DOM元素
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const menuBtn = document.getElementById('menu-btn');
+        const closeSidebar = document.getElementById('close-sidebar');
+        const mainContent = document.getElementById('main-content');
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+        const historyList = document.getElementById('history-list');
+        const deepThinkBtn = document.getElementById('deep-think-btn');
+
+        // 后端固定的API地址
+        const API_URL = 'http://localhost:8148';
+
+        // 深度思考模式状态
+        let deepThinkMode = false;
+
+        // 打字机效果速度（毫秒/字符）
+        const TYPING_SPEED = 15;
+
+        // 当前会话消息列表
+        let currentSession = [];
+        // 当前会话ID（用于标识正在进行的会话）
+        let currentSessionId = null;
+
+        // 初始化：加载历史记录
+        window.addEventListener('load', () => {
+            loadChatHistory();
+            adjustTextareaHeight();
+            // 从localStorage恢复深度思考模式状态
+            const savedMode = localStorage.getItem('deepThinkMode');
+            if (savedMode === 'true') {
+                toggleDeepThinkMode(true);
+            }
+            // 初始化欢迎消息
+            if (currentSession.length === 0) {
+                appendMessage('bot', '你好！我是UPC-Chat。');
+            }
+        });
+
+        // 侧边栏控制
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.add('open');
+            sidebarOverlay.classList.add('show');
+            mainContent.classList.add('sidebar-open');
+        });
+
+        closeSidebar.addEventListener('click', closeSidebarMenu);
+        sidebarOverlay.addEventListener('click', closeSidebarMenu);
+
+        function closeSidebarMenu() {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('show');
+            mainContent.classList.remove('sidebar-open');
+        }
+
+        // 切换深度思考模式
+        function toggleDeepThinkMode(active) {
+            deepThinkMode = active;
+            deepThinkBtn.classList.toggle('active', active);
+            localStorage.setItem('deepThinkMode', active);
+        }
+
+        // 深度思考按钮点击事件
+        deepThinkBtn.addEventListener('click', () => {
+            toggleDeepThinkMode(!deepThinkMode);
+        });
+
+        // 发送消息
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const userMessage = messageInput.value.trim();
+            if (!userMessage) return;
+
+            // 如果是新会话，创建会话ID
+            if (currentSessionId === null) {
+                currentSessionId = new Date().getTime();
+            }
+
+            // 显示用户消息
+            appendMessage('user', userMessage);
+            currentSession.push({ role: 'user', content: userMessage });
+            messageInput.value = '';
+            adjustTextareaHeight();
+
+            // 调用后端API
+            await sendMessageToAI(userMessage);
+        }
+
+        // 发送消息到后端API
+        async function sendMessageToAI(userMessage) {
+            showTypingIndicator(true);
+            try {
+                // 获取选中的模型（新增）
+                const selectedModel = document.getElementById('model-select').value;
+        
+                // 构建请求数据，增加模型参数（修改）
+                const requestData = {
+                    prompt: userMessage,
+                    deep_think: deepThinkMode,
+                    model: selectedModel  // 传递选中的模型
+                };
+
+                // 调用生成代码接口（后续代码不变）
+                const response = await fetch(`${API_URL}/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`服务器错误: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // 处理深度思考内容，去除无意义符号
+                const processedThought = data.thought_process 
+                    ? data.thought_process
+                        .replace(/###/g, '')  // 移除三级标题符号
+                        .replace(/\*\*/g, '') // 移除加粗符号
+                        .replace(/^\s+|\s+$/g, '') // 移除首尾空白
+                    : '';
+                
+                // 创建消息容器
+                const messageContainer = createBotMessageContainer();
+                
+                if (deepThinkMode && processedThought) {
+                    // 深度思考模式：固定分为两个区域，各带绿色加粗标题
+                    const combinedContent = '<div class="thinking-container"><div class="thought-process"><span class="section-title">深度思考</span>' + processedThought + '</div><div class="separator-line"></div><div class="answer-content"><span class="section-title">回答</span>' + (data.code || '未生成有效内容') + '</div></div>';
+                    
+                    // 使用打字机效果显示内容
+                    await typeMessage(messageContainer, combinedContent);
+                    
+                    // 保存对话历史（保存完整内容）
+                    currentSession.push({ role: 'bot', content: combinedContent });
+                } else {
+                    // 普通模式：直接显示代码
+                    const codeContent = data.code || '未生成有效代码';
+                    
+                    // 使用打字机效果显示内容
+                    await typeMessage(messageContainer, codeContent);
+                    
+                    // 保存对话历史
+                    currentSession.push({ role: 'bot', content: codeContent });
+                }
+
+            } catch (error) {
+                console.error('API请求错误:', error);
+                appendMessage('bot', `生成失败: ${error.message}`);
+                currentSession.push({ role: 'bot', content: `生成失败: ${error.message}` });
+            } finally {
+                showTypingIndicator(false);
+                saveChatHistory(); // 每轮对话后自动保存
+            }
+        }
+
+        // 显示/隐藏正在输入状态
+        function showTypingIndicator(show) {
+            typingIndicator.style.display = show ? 'block' : 'none';
+        }
+
+        // 创建机器人消息容器
+        function createBotMessageContainer() {
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container bot';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar bot-avatar';
+            avatar.textContent = 'AI';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot-message';
+
+            const messageTime = document.createElement('div');
+            messageTime.className = 'message-time';
+            messageTime.textContent = new Date().toLocaleTimeString();
+
+            messageDiv.appendChild(messageTime);
+            messageContainer.appendChild(avatar);
+            messageContainer.appendChild(messageDiv);
+            chatMessages.appendChild(messageContainer);
+
+            // 滚动到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // 返回内容将被填充的元素
+            return messageDiv;
+        }
+
+        // 使用打字机效果显示消息
+        async function typeMessage(container, content) {
+            // 清空容器（只保留时间戳）
+            const messageTime = container.querySelector('.message-time');
+            container.innerHTML = '';
+            container.appendChild(messageTime);
+            
+            // 创建内容元素
+            const contentElement = document.createElement('div');
+            contentElement.style.whiteSpace = 'pre-wrap';
+            contentElement.style.margin = '0';
+            container.insertBefore(contentElement, messageTime);
+            
+            // 逐个字符显示
+            let displayText = '';
+            for (let i = 0; i < content.length; i++) {
+                displayText += content[i];
+                contentElement.innerHTML = displayText; // 不转义HTML，保留标签
+                
+                // 滚动到底部
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // 等待一段时间
+                await new Promise(resolve => setTimeout(resolve, TYPING_SPEED));
+            }
+        }
+
+        // 直接添加消息（用于非打字机效果的情况）
+        function appendMessage(sender, content) {
+            const messageContainer = document.createElement('div');
+            messageContainer.className = `message-container ${sender}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${sender}-avatar`;
+            avatar.textContent = sender === 'user' ? '你' : 'AI';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            // 不转义HTML，保留标签结构
+            messageDiv.innerHTML = `<div style="white-space: pre-wrap; margin: 0;color:black">${content}</div>`;
+
+            const messageTime = document.createElement('div');
+            messageTime.className = 'message-time';
+            messageTime.textContent = new Date().toLocaleTimeString();
+
+            messageDiv.appendChild(messageTime);
+            messageContainer.appendChild(avatar);
+            messageContainer.appendChild(messageDiv);
+            chatMessages.appendChild(messageContainer);
+
+            // 滚动到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 保存聊天历史到localStorage
+        function saveChatHistory() {
+            if (currentSession.length === 0) return;
+            
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            
+            // 如果当前会话ID存在，更新现有记录；否则创建新记录
+            if (currentSessionId) {
+                const existingIndex = history.findIndex(item => item.id === currentSessionId);
+                if (existingIndex !== -1) {
+                    // 更新现有记录
+                    history[existingIndex] = {
+                        id: currentSessionId,
+                        session: currentSession.slice(),
+                        time: new Date().toLocaleString(),
+                        deep_think: deepThinkMode
+                    };
+                } else {
+                    // 创建新记录
+                    history.push({
+                        id: currentSessionId,
+                        session: currentSession.slice(),
+                        time: new Date().toLocaleString(),
+                        deep_think: deepThinkMode
+                    });
+                }
+            } else {
+                // 创建新记录（使用当前时间作为ID）
+                const timestamp = new Date().getTime();
+                history.push({
+                    id: timestamp,
+                    session: currentSession.slice(),
+                    time: new Date().toLocaleString(),
+                    deep_think: deepThinkMode
+                });
+            }
+            
+            localStorage.setItem('chatHistory', JSON.stringify(history));
+            renderHistoryList();
+        }
+
+        // 加载聊天历史
+        function loadChatHistory() {
+            renderHistoryList();
+        }
+
+        // 渲染历史记录列表
+        function renderHistoryList() {
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            historyList.innerHTML = '';
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<div style="color:#aaa;text-align:center;padding:1.5em 0;">暂无历史对话</div>';
+                return;
+            }
+
+            // 倒序显示（最新的在前面）
+            history.slice().reverse().forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.setAttribute('data-id', item.id);
+                
+                // 为当前会话添加高亮标识
+                const isCurrentSession = item.id === currentSessionId;
+                const currentSessionMark = isCurrentSession ? '<span style="color: #007bff; font-size: 10px; margin-left: 5px;">当前</span>' : '';
+                
+                // 为深度思考的历史记录添加标记
+                const deepThinkMark = item.deep_think ? '<span style="color: #42b983; font-size: 10px; margin-left: 5px;">深度思考</span>' : '';
+                
+                // 显示第一轮用户消息作为摘要
+                let summary = '';
+                if (item.session && item.session.length > 0) {
+                    const firstUser = item.session.find(msg => msg.role === 'user');
+                    if (firstUser) {
+                        summary = firstUser.content.substring(0, 30) + (firstUser.content.length > 30 ? '...' : '');
+                    } else {
+                        // 没有用户消息，显示欢迎语或"新对话"
+                        const firstBot = item.session.find(msg => msg.role === 'bot');
+                        summary = firstBot ? (firstBot.content.substring(0, 20) + (firstBot.content.length > 20 ? '...' : '')) : '新对话';
+                    }
+                }
+                
+                // 为当前会话添加特殊样式
+                if (isCurrentSession) {
+                    historyItem.style.backgroundColor = '#f8f9fa';
+                    historyItem.style.borderLeft = '3px solid #007bff';
+                }
+                
+                historyItem.innerHTML = `
+                    <div style="font-weight: 500; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>${summary}${currentSessionMark}${deepThinkMark}</span>
+                        <button class="delete-history-btn" style="background:#e74c3c;color:white;border:none;padding:2px 8px;border-radius:3px;font-size:12px;cursor:pointer;">删除</button>
+                    </div>
+                    <div style="font-size: 12px; color: #666;">${item.time}</div>
+                `;
+                
+                // 点击加载对话
+                historyItem.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('delete-history-btn')) return;
+                    loadHistoryItem(item.id);
+                    closeSidebarMenu();
+                });
+                
+                // 删除按钮事件
+                historyItem.querySelector('.delete-history-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteHistoryItem(item.id);
+                });
+                
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        // 删除单条历史记录
+        function deleteHistoryItem(id) {
+            if (!confirm('确定要删除这条对话吗？')) return;
+            let history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            history = history.filter(item => item.id !== id);
+            localStorage.setItem('chatHistory', JSON.stringify(history));
+            // 如果当前聊天区展示的是被删除的对话，则清空聊天区并重置会话状态
+            if (currentSessionId === id) {
+                currentSession = [];
+                currentSessionId = null;
+            }
+            chatMessages.innerHTML = '';
+            appendMessage('bot', '你好！我是代码生成助手。请输入你的代码需求，我会为你生成符合要求的代码~');
+            renderHistoryList();
+        }
+
+        // 加载指定历史记录（无打字机效果）
+        function loadHistoryItem(id) {
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            const item = history.find(h => h.id === id);
+            if (item && item.session) {
+                chatMessages.innerHTML = '';
+                item.session.forEach(msg => {
+                    appendMessage(msg.role === 'user' ? 'user' : 'bot', msg.content);
+                });
+                // 恢复当前会话内容和ID，允许继续对话
+                currentSession = item.session.slice();
+                currentSessionId = item.id;
+                // 如果历史记录使用了深度思考模式，自动开启
+                if (item.deep_think) {
+                    toggleDeepThinkMode(true);
+                }
+                renderHistoryList(); // 重新渲染高亮
+            }
+        }
+
+        // 新建对话
+        newChatBtn.addEventListener('click', () => {
+            saveChatHistory(); // 保存当前会话
+            // 新建一个只包含欢迎语的会话
+            currentSession = [
+                { role: 'bot', content: '你好！我是UPC-Chat。' }
+            ];
+            currentSessionId = new Date().getTime(); // 新会话ID
+            chatMessages.innerHTML = '';
+            appendMessage('bot', currentSession[0].content);
+            saveChatHistory(); // 立即保存新会话（这样历史栏会出现新对话）
+        });
+
+        // 清空所有历史记录
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                localStorage.removeItem('chatHistory');
+                historyList.innerHTML = '';
+            }
+        });
+
+        // 调整文本框高度
+        messageInput.addEventListener('input', adjustTextareaHeight);
+
+        function adjustTextareaHeight() {
+            messageInput.style.height = 'auto';
+            const maxHeight = 100;
+            const scrollHeight = messageInput.scrollHeight;
+            messageInput.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+        }
+
+        // 页面关闭前保存
+        window.addEventListener('beforeunload', () => {
+            saveChatHistory();
+        });
+
+        // 新增功能按钮事件
+        document.getElementById('btn-train').onclick = function() {
+            alert('个性化代码训练功能开发中，敬请期待！');
+        };
+        document.getElementById('btn-ide').onclick = function() {
+            window.open('https://www.techiedelight.com/compiler/zh/index', '_blank');
+        };
+        document.getElementById('btn-docs').onclick = function() {
+            window.open('https://your-docs-url.com', '_blank');
+        };
+    </script>
 </body>
 </html>
+
