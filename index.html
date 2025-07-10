@@ -87,6 +87,9 @@
                     <button class="deep-think-btn" id="deep-think-btn" title="开启/关闭深度思考模式">
                         深度思考
                     </button>
+                    <button class="deep-think-btn" id="voice-input-btn" title="语音输入">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M5 8v8a7 7 0 0 0 14 0V8"/><rect x="9" y="1" width="6" height="14" rx="3"/></svg>
+                    </button>
                     <button class="sendbutton-" id="send-button">
                         <svg class="send-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -541,8 +544,14 @@
         });
 
         // 新增功能按钮事件
-        document.getElementById('btn-train').onclick = function() {
-            alert('个性化代码训练功能开发中，敬请期待！');
+        document.getElementById('btn-train').onclick = async function() {
+            // 自动向AI发送个性化推荐请求（不显示用户消息）
+            const autoMsg = '请根据我的历史对话，推荐一份适合我的代码题目及题目链接，将题目分为入门进阶等难度';
+            // 不显示appendMessage，不push到currentSession
+            messageInput.value = '';
+            adjustTextareaHeight();
+            // 调用后端API，模拟为系统消息
+            await sendMessageToAI(autoMsg);
         };
         document.getElementById('btn-ide').onclick = function() {
             window.open('https://www.techiedelight.com/compiler/zh/index', '_blank');
@@ -550,6 +559,56 @@
         document.getElementById('btn-docs').onclick = function() {
             window.open('https://your-docs-url.com', '_blank');
         };
+
+        // 语音输入功能
+        const voiceInputBtn = document.getElementById('voice-input-btn');
+        if (voiceInputBtn) {
+            let recognition;
+            let recognizing = false;
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'zh-CN';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = function() {
+                    recognizing = true;
+                    voiceInputBtn.classList.add('active');
+                    voiceInputBtn.title = '正在聆听...';
+                };
+                recognition.onend = function() {
+                    recognizing = false;
+                    voiceInputBtn.classList.remove('active');
+                    voiceInputBtn.title = '语音输入';
+                };
+                recognition.onerror = function(event) {
+                    recognizing = false;
+                    voiceInputBtn.classList.remove('active');
+                    voiceInputBtn.title = '语音输入';
+                    alert('语音识别出错: ' + event.error);
+                };
+                recognition.onresult = function(event) {
+                    if (event.results.length > 0) {
+                        const transcript = event.results[0][0].transcript;
+                        messageInput.value = transcript;
+                        adjustTextareaHeight();
+                    }
+                };
+
+                voiceInputBtn.onclick = function() {
+                    if (recognizing) {
+                        recognition.stop();
+                    } else {
+                        recognition.start();
+                    }
+                };
+            } else {
+                voiceInputBtn.onclick = function() {
+                    alert('当前浏览器不支持语音识别功能');
+                };
+            }
+        }
     </script>
 </body>
 </html>
