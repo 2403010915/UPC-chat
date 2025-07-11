@@ -77,8 +77,11 @@
                     <button class="senbutton" id="btn-ide" title="在线IDE">
                         在线IDE
                     </button>
-                    <button class="senbutton" id="btn-docs" title="开发文档">
-                         敬请期待
+                    <button class="senbutton" id="file-upload-btn" title="上传文件">
+                        代码分析优化
+                    </button>
+                    <button class="senbutton" id="btn-docs" title="做题总结">
+                         做题总结
                     </button>
                 </div>
                 <div class="input-area">
@@ -90,6 +93,8 @@
                     <button class="deep-think-btn" id="voice-input-btn" title="语音输入">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M5 8v8a7 7 0 0 0 14 0V8"/><rect x="9" y="1" width="6" height="14" rx="3"/></svg>
                     </button>
+                    
+                    <input type="file" id="file-input" style="display: none;" accept=".txt,.py,.js,.java,.cpp,.c,.html,.css,.json,.md">
                     <button class="sendbutton-" id="send-button">
                         <svg class="send-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -557,8 +562,64 @@
             window.open('https://www.techiedelight.com/compiler/zh/index', '_blank');
         };
         document.getElementById('btn-docs').onclick = function() {
-            window.open('https://your-docs-url.com', '_blank');
+            showStudySummary();
         };
+
+        // 做题总结功能
+        function showStudySummary() {
+            const today = new Date().toLocaleDateString();
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            
+            // 统计今天的对话
+            const todaySessions = history.filter(item => {
+                const sessionDate = new Date(item.time).toLocaleDateString();
+                return sessionDate === today;
+            });
+            
+            // 统计做题相关的内容
+            let problemCount = 0;
+            let studyTopics = [];
+            
+            todaySessions.forEach(session => {
+                if (session.session) {
+                    session.session.forEach(msg => {
+                        if (msg.role === 'user') {
+                            const content = msg.content.toLowerCase();
+                            // 检测做题相关的关键词
+                            if (content.includes('题') || content.includes('算法') || content.includes('leetcode') || 
+                                content.includes('洛谷') || content.includes('已做题') || content.includes('oj') ||
+                                content.includes('编程') || content.includes('代码') || content.includes('实现')) {
+                                problemCount++;
+                                // 提取题目相关的内容作为学习主题
+                                const topic = msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
+                                if (!studyTopics.includes(topic)) {
+                                    studyTopics.push(topic);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // 创建总结内容
+            let summaryContent = `📊 今日做题总结 (${today})\n\n`;
+            summaryContent += `🎯 做题数量: ${problemCount} 题\n`;
+            summaryContent += `📝 学习主题: ${studyTopics.length} 个\n\n`;
+            
+            if (studyTopics.length > 0) {
+                summaryContent += `📚 今日学习内容:\n`;
+                studyTopics.forEach((topic, index) => {
+                    summaryContent += `${index + 1}. ${topic}\n`;
+                });
+            } else {
+                summaryContent += `📚 今日暂无做题记录，继续加油！\n`;
+            }
+            
+            summaryContent += `\n💡 建议: 保持每日练习，循序渐进提升算法能力！`;
+            
+            // 显示总结
+            appendMessage('bot', summaryContent);
+        }
 
         // 语音输入功能
         const voiceInputBtn = document.getElementById('voice-input-btn');
@@ -608,6 +669,59 @@
                     alert('当前浏览器不支持语音识别功能');
                 };
             }
+        }
+
+        // 文件上传功能
+        const fileUploadBtn = document.getElementById('file-upload-btn');
+        const fileInput = document.getElementById('file-input');
+        
+        if (fileUploadBtn && fileInput) {
+            fileUploadBtn.onclick = function() {
+                fileInput.click();
+            };
+            
+            fileInput.onchange = async function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                // 检查文件大小（限制为5MB）
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('文件大小不能超过5MB');
+                    return;
+                }
+                
+                try {
+                    const fileContent = await readFileAsText(file);
+                    const fileName = file.name;
+                    const fileExtension = fileName.split('.').pop().toLowerCase();
+                    
+                    // 构建发送给AI的消息（包含文件内容但不显示）
+                    const fileMessage = `我上传了一个文件：${fileName}\n\n文件内容：\n\`\`\`${fileExtension}\n${fileContent}\n\`\`\`\n\n请帮我分析这个文件的内容，并提供相关建议或改进方案。`;
+                    
+                    // 直接调用AI而不显示在对话框中
+                    await sendMessageToAI(fileMessage);
+                    
+                } catch (error) {
+                    alert('文件读取失败: ' + error.message);
+                }
+                
+                // 清空文件输入
+                fileInput.value = '';
+            };
+        }
+        
+        // 读取文件为文本
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    resolve(e.target.result);
+                };
+                reader.onerror = function(e) {
+                    reject(new Error('文件读取失败'));
+                };
+                reader.readAsText(file);
+            });
         }
     </script>
 </body>
