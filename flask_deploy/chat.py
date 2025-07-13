@@ -5,6 +5,8 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import re  # 新增正则模块，用于处理Markdown符号
+from dotenv import load_dotenv  # 修正导入语句
+load_dotenv()
 
 
 # ==================== 配置区域 ====================
