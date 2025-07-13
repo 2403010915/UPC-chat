@@ -605,3 +605,103 @@ color:white; /* 恢复文本颜色 */
         max-height: 60vh;
     }
 }
+/* OJ 系统样式 */
+.oj-container {
+    width: 60vw;
+    max-width: 900px;
+    min-width: 350px;
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.oj-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: 600;
+    color: #333;
+}
+
+.refresh-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #007bff;
+    color: white;
+}
+
+.refresh-btn:hover {
+    background: #0056b3;
+}
+
+.oj-problem {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.oj-code-editor {
+    flex: 1;
+    padding: 16px;
+    background: #1e1e1e;
+}
+
+.submit-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #007bff;
+    color: white;
+    margin: 16px;
+}
+
+.submit-btn:hover {
+    background: #0056b3;
+}
+
+.oj-output {
+    padding: 16px 20px;
+    border-top: 1px solid #e9ecef;
+}
+/* 加载动画样式 */
+.loader {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #3b82f6;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 结果显示区域样式 */
+.result-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #f8fafc;
+}
+
+.error-message {
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #fee2e2;
+    color: #991b1b;
+}

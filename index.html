@@ -338,20 +338,21 @@
                     <div class="typing-dot"></div>
                 </div>
                 <div class="chat-extra-actions" style="display: flex; gap: 12px; margin: 16px 0 8px 0; justify-content: center;">
-                    <button class="senbutton" id="btn-train" title="个性化代码训练">
-                        个性化代码训练
+                    <button class="senbutton" id="btn-train" title="个性化题目推荐">
+                        个性化题目推荐
                     </button>
                     <button class="senbutton" id="btn-ide" title="在线IDE">
                         在线IDE
                     </button>
+                    <button class="senbutton" id="btn-oj" title="在线OJ">
+                        代码训练
+                    </button>
                     <button class="senbutton" id="file-upload-btn" title="上传文件">
                         代码分析优化
                     </button>
-                    <button class="senbutton" id="btn-docs" title="做题总结">
-                         做题总结
-                    </button>
-                    <button class="senbutton" id="btn-weekly" title="每周代码总结">
-                         每周代码总结
+                    
+                    <button class="senbutton" id="btn-weekly" title="每周回顾">
+                         每周回顾
                     </button>
                     
                 </div>
@@ -376,6 +377,7 @@
             </div>
         </main>
     </div>
+
     <script>
         // DOM元素
         const sidebar = document.getElementById('sidebar');
@@ -832,73 +834,14 @@
         document.getElementById('btn-ide').onclick = function() {
             window.open('https://www.techiedelight.com/compiler/zh/index', '_blank');
         };
-        document.getElementById('btn-docs').onclick = function() {
-            showStudySummary();
-        };
 
-        // 做题总结功能
-        function showStudySummary() {
-            const today = new Date().toLocaleDateString();
-            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
-            
-            // 统计今天的对话
-            const todaySessions = history.filter(item => {
-                const sessionDate = new Date(item.time).toLocaleDateString();
-                return sessionDate === today;
-            });
-            
-            // 统计做题相关的内容
-            let problemCount = 0;
-            let studyTopics = [];
-            
-            todaySessions.forEach(session => {
-                if (session.session) {
-                    session.session.forEach(msg => {
-                        if (msg.role === 'user') {
-                            const content = msg.content.toLowerCase();
-                            // 检测做题相关的关键词
-                            if (content.includes('题') || content.includes('算法') || content.includes('leetcode') || 
-                                content.includes('洛谷') || content.includes('已做题') || content.includes('oj') ||
-                                content.includes('编程') || content.includes('代码') || content.includes('实现')) {
-                                problemCount++;
-                                // 提取题目相关的内容作为学习主题
-                                const topic = msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
-                                if (!studyTopics.includes(topic)) {
-                                    studyTopics.push(topic);
-                                }
-                            }
-                        }
-                    });
-                }
-            });
-            
-            // 创建总结内容
-            let summaryContent = `📊 今日做题总结 (${today})\n\n`;
-            summaryContent += `🎯 做题数量: ${problemCount} 题\n`;
-            summaryContent += `📝 学习主题: ${studyTopics.length} 个\n\n`;
-            
-            if (studyTopics.length > 0) {
-                summaryContent += `📚 今日学习内容:\n`;
-                studyTopics.forEach((topic, index) => {
-                    summaryContent += `${index + 1}. ${topic}\n`;
-                });
-            } else {
-                summaryContent += `📚 今日暂无做题记录，继续加油！\n`;
-            }
-            
-            summaryContent += `\n💡 建议: 保持每日练习，循序渐进提升算法能力！`;
-            
-            // 显示总结
-            appendMessage('bot', summaryContent);
-        }
 
-        // 每周代码总结功能
+        // 每周回顾功能
         document.getElementById('btn-weekly').onclick = function() {
             showWeeklySummaryModal();
         };
 
         function showWeeklySummaryModal() {
-            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
             const today = new Date();
             
             // 获取最近7天的数据
@@ -916,22 +859,32 @@
                 };
             }
             
-            // 统计每周数据
+            // 从localStorage获取OJ系统数据
+            const ojHistory = JSON.parse(localStorage.getItem('ojHistory') || '[]');
+            
+            // 统计每周OJ系统做题数据
+            ojHistory.forEach(item => {
+                const sessionDate = new Date(item.timestamp).toLocaleDateString();
+                if (dailyStats[sessionDate]) {
+                    dailyStats[sessionDate].problems++;
+                    if (item.problem && !dailyStats[sessionDate].topics.includes(item.problem)) {
+                        dailyStats[sessionDate].topics.push(item.problem);
+                    }
+                }
+            });
+            
+            // 从聊天历史中获取OJ系统做题数据
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
             history.forEach(item => {
                 const sessionDate = new Date(item.time).toLocaleDateString();
                 if (dailyStats[sessionDate]) {
                     if (item.session) {
                         item.session.forEach(msg => {
-                            if (msg.role === 'user') {
-                                const content = msg.content.toLowerCase();
-                                if (content.includes('题') || content.includes('算法') || content.includes('leetcode') || 
-                                    content.includes('洛谷') || content.includes('已做题') || content.includes('oj') ||
-                                    content.includes('编程') || content.includes('代码') || content.includes('实现')) {
-                                    dailyStats[sessionDate].problems++;
-                                    const topic = msg.content.substring(0, 30) + (msg.content.length > 30 ? '...' : '');
-                                    if (!dailyStats[sessionDate].topics.includes(topic)) {
-                                        dailyStats[sessionDate].topics.push(topic);
-                                    }
+                            if (msg.role === 'user' && msg.content.includes('OJ 系统提交代码:')) {
+                                dailyStats[sessionDate].problems++;
+                                const topic = msg.content.substring(msg.content.indexOf('OJ 系统提交代码:') + 'OJ 系统提交代码:'.length, 30) + (msg.content.length > 30 ? '...' : '');
+                                if (!dailyStats[sessionDate].topics.includes(topic)) {
+                                    dailyStats[sessionDate].topics.push(topic);
                                 }
                             }
                         });
@@ -941,12 +894,6 @@
                     }
                 }
             });
-            
-            // 如果本周没有真实数据，生成随机数据
-            const hasRealData = Object.values(dailyStats).some(day => day.problems > 0);
-            if (!hasRealData) {
-                generateRandomWeeklyData(dailyStats);
-            }
             
             // 生成图表数据
             const chartData = Object.values(dailyStats);
@@ -965,61 +912,78 @@
                 existingModal.remove();
             }
 
+            // 检查是否有真实数据
+            const hasRealData = totalProblems > 0;
+            
             const modal = document.createElement('div');
             modal.id = 'weekly-modal';
             modal.innerHTML = `
                 <div class="modal-overlay">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h2>📈 本周代码学习报告</h2>
+                            <h2>📈 本周学习回顾</h2>
                             <button class="modal-close">&times;</button>
                         </div>
                         <div class="modal-body">
-                                                         <div class="stats-grid">
-                                 <div class="stat-card">
-                                     <div class="stat-number">${totalProblems}</div>
-                                     <div class="stat-label">做题总数</div>
-                                 </div>
-                                 <div class="stat-card">
-                                     <div class="stat-number">${activeDays}/7</div>
-                                     <div class="stat-label">活跃天数</div>
-                                 </div>
-                                 <div class="stat-card">
-                                     <div class="stat-number">${(totalProblems / 7).toFixed(1)}</div>
-                                     <div class="stat-label">日均做题</div>
-                                 </div>
-                             </div>
-                            <div class="chart-container">
-                                <h3>📊 本周做题趋势</h3>
-                                <div class="chart" id="weekly-chart"></div>
-                            </div>
-                                                         <div class="daily-details">
-                                 <h3>📅 每日详情</h3>
-                                 <div class="daily-list">
-                                     ${chartData.map(day => `
-                                         <div class="daily-item ${day.problems > 0 ? 'active' : 'inactive'}">
-                                             <div class="daily-header">
-                                                 <span class="day-name">周${['日', '一', '二', '三', '四', '五', '六'][new Date(day.date).getDay()]}</span>
-                                                 <span class="day-date">${day.date}</span>
-                                                 <span class="day-problems">${day.problems}题</span>
-                                             </div>
-                                             ${day.topics.length > 0 ? `
-                                                 <div class="daily-topics">
-                                                     ${day.topics.map(topic => {
-                                                         // 去掉题号，只保留难度和算法类型
-                                                         const cleanTopic = topic.replace(/\(题号\d+\)/g, '');
-                                                         return `<div class="topic-item">• ${cleanTopic}</div>`;
-                                                     }).join('')}
-                                                 </div>
-                                             ` : ''}
-                                         </div>
-                                     `).join('')}
-                                 </div>
-                             </div>
-                            <div class="suggestion">
-                                <h3>💡 学习建议</h3>
-                                <p>${getSuggestion(totalProblems, activeDays)}</p>
-                            </div>
+                            ${hasRealData ? `
+                                <div class="stats-grid">
+                                    <div class="stat-card">
+                                        <div class="stat-number">${totalProblems}</div>
+                                        <div class="stat-label">做题总数</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-number">${activeDays}/7</div>
+                                        <div class="stat-label">活跃天数</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-number">${(totalProblems / 7).toFixed(1)}</div>
+                                        <div class="stat-label">日均做题</div>
+                                    </div>
+                                </div>
+                                <div class="chart-container">
+                                    <h3>📊 本周做题趋势</h3>
+                                    <div class="chart" id="weekly-chart"></div>
+                                </div>
+                                <div class="daily-details">
+                                    <h3>📅 每日详情</h3>
+                                    <div class="daily-list">
+                                        ${chartData.map(day => `
+                                            <div class="daily-item ${day.problems > 0 ? 'active' : 'inactive'}">
+                                                <div class="daily-header">
+                                                    <span class="day-name">周${['日', '一', '二', '三', '四', '五', '六'][new Date(day.date).getDay()]}</span>
+                                                    <span class="day-date">${day.date}</span>
+                                                    <span class="day-problems">${day.problems}题</span>
+                                                </div>
+                                                ${day.topics.length > 0 ? `
+                                                    <div class="daily-topics">
+                                                        ${day.topics.map(topic => {
+                                                            // 去掉题号，只保留难度和算法类型
+                                                            const cleanTopic = topic.replace(/\(题号\d+\)/g, '');
+                                                            return `<div class="topic-item">• ${cleanTopic}</div>`;
+                                                        }).join('')}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div class="suggestion">
+                                    <h3>💡 学习建议</h3>
+                                    <p>${getSuggestion(totalProblems, activeDays)}</p>
+                                </div>
+                            ` : `
+                                <div style="text-align: center; padding: 40px 20px;">
+                                    <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
+                                    <h3 style="color: #666; margin-bottom: 15px;">本周暂无做题记录</h3>
+                                    <p style="color: #999; line-height: 1.6;">
+                                        本周还没有在代码训练系统中做题的记录。<br>
+                                        建议您：<br>
+                                        • 点击"代码训练"按钮开始做题<br>
+                                        • 在对话框中提交代码进行分析<br>
+                                        • 保持每日练习，提升算法能力
+                                    </p>
+                                </div>
+                            `}
                         </div>
                     </div>
                 </div>
@@ -1038,8 +1002,10 @@
                 }
             });
 
-            // 生成图表
-            generateChart(chartData);
+            // 只有在有真实数据时才生成图表
+            if (hasRealData) {
+                generateChart(chartData);
+            }
         }
 
         function generateChart(data) {
@@ -1191,54 +1157,7 @@
             }
         }
 
-        // 生成随机每周数据
-        function generateRandomWeeklyData(dailyStats) {
-            const problemTypes = [
-                '数组排序算法', '链表操作', '二叉树遍历', '动态规划', '贪心算法',
-                '深度优先搜索', '广度优先搜索', '字符串处理', '哈希表应用', '栈和队列',
-                '图论算法', '二分查找', '滑动窗口', '双指针技巧', '回溯算法'
-            ];
-            
-            const difficultyLevels = ['简单', '中等', '困难'];
-            
-            // 生成随机做题数据
-            Object.keys(dailyStats).forEach((date, index) => {
-                const day = dailyStats[date];
-                
-                // 模拟真实的学习模式：周中学习较多，周末较少
-                let baseProblems = 0;
-                const dayOfWeek = new Date(date).getDay();
-                
-                if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    // 周末
-                    baseProblems = Math.random() < 0.7 ? 0 : Math.floor(Math.random() * 3) + 1;
-                } else {
-                    // 工作日
-                    baseProblems = Math.floor(Math.random() * 5) + 1;
-                }
-                
-                day.problems = baseProblems;
-                
-                                    // 生成随机学习主题
-                    if (baseProblems > 0) {
-                        const numTopics = Math.min(baseProblems, Math.floor(Math.random() * 3) + 1);
-                        for (let i = 0; i < numTopics; i++) {
-                            const randomType = problemTypes[Math.floor(Math.random() * problemTypes.length)];
-                            const randomDifficulty = difficultyLevels[Math.floor(Math.random() * difficultyLevels.length)];
-                            day.topics.push(`${randomDifficulty} - ${randomType}`);
-                        }
-                    }
-            });
-            
-            // 确保至少有一天有做题记录
-            const allZero = Object.values(dailyStats).every(day => day.problems === 0);
-            if (allZero) {
-                const randomDay = Object.keys(dailyStats)[Math.floor(Math.random() * 7)];
-                const randomProblems = Math.floor(Math.random() * 4) + 2;
-                dailyStats[randomDay].problems = randomProblems;
-                dailyStats[randomDay].topics = ['中等 - 数组排序算法', '简单 - 链表操作'];
-            }
-        }
+
 
         // 语音输入功能
         const voiceInputBtn = document.getElementById('voice-input-btn');
@@ -1288,6 +1207,24 @@
                     alert('当前浏览器不支持语音识别功能');
                 };
             }
+        }
+
+        // 代码训练按钮功能
+        const btnOj = document.getElementById('btn-oj');
+        if (btnOj) {
+            btnOj.onclick = function() {
+                // 在新标签页中打开代码训练系统
+                window.open('oj.html', '_blank');
+            };
+        }
+
+        // 在线IDE按钮功能
+        const btnIde = document.getElementById('btn-ide');
+        if (btnIde) {
+            btnIde.onclick = function() {
+                // 在新窗口中打开在线IDE页面
+                window.open('https://replit.com/', '_blank');
+            };
         }
 
         // 文件上传功能
@@ -1345,4 +1282,3 @@
     </script>
 </body>
 </html>
-
